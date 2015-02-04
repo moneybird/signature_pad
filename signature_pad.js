@@ -32,6 +32,12 @@ var SignaturePad = (function (document) {
         this.backgroundColor = opts.backgroundColor || "rgba(0,0,0,0)";
         this.onEnd = opts.onEnd;
         this.onBegin = opts.onBegin;
+        this.registerAuditTrail = opts.auditTrailField != null;
+
+        if (this.registerAuditTrail) {
+            this.auditTrail = new Array();
+            this.auditTrailField = opts.auditTrailField;
+        }
 
         this._canvas = canvas;
         this._ctx = canvas.getContext("2d");
@@ -49,6 +55,10 @@ var SignaturePad = (function (document) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         this._reset();
+
+        if (this.registerAuditTrail) {
+            this.auditTrailField.value = "";
+        }
     };
 
     SignaturePad.prototype.toDataURL = function (imageType, quality) {
@@ -103,6 +113,9 @@ var SignaturePad = (function (document) {
         }
         if (typeof this.onEnd === 'function') {
             this.onEnd(event);
+        }
+        if (this.registerAuditTrail) {
+            this.auditTrailField.value = JSON.stringify(this.auditTrail);
         }
     };
 
@@ -184,6 +197,10 @@ var SignaturePad = (function (document) {
             curve, tmp;
 
         points.push(point);
+
+        if (this.registerAuditTrail) {
+            this.auditTrail.push([point.time, point.x, point.y])
+        }
 
         if (points.length > 2) {
             // To reduce the initial lag make it work with 3 points
