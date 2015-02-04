@@ -32,11 +32,18 @@ var SignaturePad = (function (document) {
         this.backgroundColor = opts.backgroundColor || "rgba(0,0,0,0)";
         this.onEnd = opts.onEnd;
         this.onBegin = opts.onBegin;
+
         this.registerAuditTrail = opts.auditTrailField != null;
 
         if (this.registerAuditTrail) {
             this.auditTrail = new Array();
             this.auditTrailField = opts.auditTrailField;
+        }
+
+        this.svgOutput = opts.svgOutputField != null;
+        if (this.svgOutput) {
+            this.svg_ctx = new C2S(canvas.width, canvas.height);
+            this.svgOutputField = opts.svgOutputField;
         }
 
         this._canvas = canvas;
@@ -54,6 +61,13 @@ var SignaturePad = (function (document) {
         ctx.fillStyle = this.backgroundColor;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        if (this.svgOutput) {
+            this.svg_ctx.fillStyle = this.backgroundColor;
+            this.svg_ctx.clearRect(0, 0, canvas.width, canvas.height);
+            this.svg_ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
         this._reset();
 
         if (this.registerAuditTrail) {
@@ -98,10 +112,17 @@ var SignaturePad = (function (document) {
         var ctx = this._ctx,
             dotSize = typeof(this.dotSize) === 'function' ? this.dotSize() : this.dotSize;
 
+        if (this.svgOutput) { this.svg_ctx.beginPath(); };
+
         ctx.beginPath();
         this._drawPoint(point.x, point.y, dotSize);
         ctx.closePath();
         ctx.fill();
+
+        if (this.svgOutput) {
+            this.svg_ctx.closePath();
+            this.svg_ctx.fill();
+        }
     };
 
     SignaturePad.prototype._strokeEnd = function (event) {
@@ -111,11 +132,14 @@ var SignaturePad = (function (document) {
         if (!canDrawCurve && point) {
             this._strokeDraw(point);
         }
-        if (typeof this.onEnd === 'function') {
-            this.onEnd(event);
-        }
         if (this.registerAuditTrail) {
             this.auditTrailField.value = JSON.stringify(this.auditTrail);
+        }
+        if (this.svgOutput) {
+            this.svgOutputField.value = this.svg_ctx.getSerializedSvg();
+        }
+        if (typeof this.onEnd === 'function') {
+            this.onEnd(event);
         }
     };
 
@@ -181,6 +205,8 @@ var SignaturePad = (function (document) {
         this._lastWidth = (this.minWidth + this.maxWidth) / 2;
         this._isEmpty = true;
         this._ctx.fillStyle = this.penColor;
+
+        if(this.svgOutput) { this.svg_ctx.fillStyle = this.penColor; };
     };
 
     SignaturePad.prototype._createPoint = function (event) {
@@ -266,6 +292,12 @@ var SignaturePad = (function (document) {
 
         ctx.moveTo(x, y);
         ctx.arc(x, y, size, 0, 2 * Math.PI, false);
+
+        if (this.svgOutput) {
+            this.svg_ctx.moveTo(x, y);
+            this.svg_ctx.arc(x, y, size, 0, 2 * Math.PI, false);
+        }
+
         this._isEmpty = false;
     };
 
@@ -276,6 +308,7 @@ var SignaturePad = (function (document) {
 
         drawSteps = Math.floor(curve.length());
         ctx.beginPath();
+        if (this.svgOutput) { this.svg_ctx.beginPath(); };
         for (i = 0; i < drawSteps; i++) {
             // Calculate the Bezier (x, y) coordinate for this step.
             t = i / drawSteps;
@@ -300,6 +333,11 @@ var SignaturePad = (function (document) {
         }
         ctx.closePath();
         ctx.fill();
+
+        if (this.svgOutput) {
+            this.svg_ctx.closePath();
+            this.svg_ctx.fill();
+        }
     };
 
     SignaturePad.prototype._strokeWidth = function (velocity) {
