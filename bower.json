@@ -1,7 +1,7 @@
 {
-  "name": "signature_pad",
+  "name": "moneybird--signature_pad",
   "main": "signature_pad.js",
-  "homepage": "https://github.com/szimek/signature_pad",
+  "homepage": "https://github.com/moneybird/signature_pad",
   "authors": [
     "Szymon Nowak <szimek@gmail.com>"
   ],
