@@ -63,14 +63,29 @@ var SignaturePad = (function (document) {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         if (this.svgOutput) {
-            this.svg_ctx.fillStyle = this.backgroundColor;
-            this.svg_ctx.clearRect(0, 0, canvas.width, canvas.height);
-            this.svg_ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Remove the nodes instead of drawing over it
+            while (this.svg_ctx.__root.hasChildNodes()) {
+                this.svg_ctx.__root.removeChild(this.svg_ctx.__root.firstChild);
+            }
+
+            //make sure we don't generate the same ids in defs
+            this.svg_ctx.__ids = {};
+
+            //defs tag
+            this.svg_ctx.__defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+            this.svg_ctx.__root.appendChild(this.svg_ctx.__defs);
+
+            //also add a group child. the svg element can't use the transform attribute
+            this.svg_ctx.__currentElement = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            this.svg_ctx.__root.appendChild(this.svg_ctx.__currentElement);
+
+            this.svgOutputField.value = "";
         }
 
         this._reset();
 
         if (this.registerAuditTrail) {
+            this.auditTrail = new Array();
             this.auditTrailField.value = "";
         }
     };
@@ -112,15 +127,13 @@ var SignaturePad = (function (document) {
         var ctx = this._ctx,
             dotSize = typeof(this.dotSize) === 'function' ? this.dotSize() : this.dotSize;
 
-        if (this.svgOutput) { this.svg_ctx.beginPath(); };
-
         ctx.beginPath();
         this._drawPoint(point.x, point.y, dotSize);
+
         ctx.closePath();
         ctx.fill();
 
         if (this.svgOutput) {
-            this.svg_ctx.closePath();
             this.svg_ctx.fill();
         }
     };
@@ -294,7 +307,6 @@ var SignaturePad = (function (document) {
         ctx.arc(x, y, size, 0, 2 * Math.PI, false);
 
         if (this.svgOutput) {
-            this.svg_ctx.moveTo(x, y);
             this.svg_ctx.arc(x, y, size, 0, 2 * Math.PI, false);
         }
 
@@ -308,7 +320,11 @@ var SignaturePad = (function (document) {
 
         drawSteps = Math.floor(curve.length());
         ctx.beginPath();
-        if (this.svgOutput) { this.svg_ctx.beginPath(); };
+
+        if (this.svgOutput) {
+            this.svg_ctx.beginPath();
+        }
+
         for (i = 0; i < drawSteps; i++) {
             // Calculate the Bezier (x, y) coordinate for this step.
             t = i / drawSteps;
@@ -335,8 +351,8 @@ var SignaturePad = (function (document) {
         ctx.fill();
 
         if (this.svgOutput) {
-            this.svg_ctx.closePath();
             this.svg_ctx.fill();
+            this.svg_ctx.closePath();
         }
     };
 
